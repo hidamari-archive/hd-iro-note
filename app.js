@@ -292,7 +292,7 @@ async function generatePoemAndColors(apiKey, text, tags, mood) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.9, maxOutputTokens: 512 }
+        generationConfig: { temperature: 0.9, maxOutputTokens: 1024 }
       })
     }
   );
