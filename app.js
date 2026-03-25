@@ -243,6 +243,9 @@ document.getElementById('btn-generate').addEventListener('click', async () => {
     if (keys.unsplash) {
       fetchUnsplashImages(keys.unsplash, text).then(images => {
         renderPreviewImages(images);
+      }).catch(e => {
+        document.getElementById('images-loading').style.display = 'none';
+        showToast('画像の取得に失敗しました: ' + e.message);
       });
     } else {
       document.getElementById('images-loading').style.display = 'none';
@@ -299,7 +302,12 @@ async function generatePoemAndColors(apiKey, text, tags, mood) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Gemini API error: ${res.status}`);
+    const msg = err.error?.message || `Gemini API error: ${res.status}`;
+    if (res.status === 429) {
+      const sec = msg.match(/retry in ([\d.]+)s/i);
+      throw new Error(sec ? `利用上限に達しました。約${Math.ceil(parseFloat(sec[1]))}秒後に再試行してください。` : '利用上限に達しました。しばらく時間をおいて再試行してください。');
+    }
+    throw new Error(msg);
   }
 
   const data = await res.json();
