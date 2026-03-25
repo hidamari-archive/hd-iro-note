@@ -304,7 +304,9 @@ async function generatePoemAndColors(apiKey, text, tags, mood) {
   }
 
   const data = await res.json();
-  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const parts = data.candidates?.[0]?.content?.parts || [];
+  // thinking モデルは parts[0] が思考、parts[1] が実際の出力になる場合がある
+  const raw = parts.filter(p => !p.thought).map(p => p.text || '').join('') || parts[0]?.text || '';
   console.log('[Gemini raw]', raw);
 
   // JSON抽出（コードブロック除去 → {} 抽出）
