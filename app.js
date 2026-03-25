@@ -226,10 +226,12 @@ document.getElementById('btn-generate').addEventListener('click', async () => {
     let poem = '';
     let colors = [];
 
+    let searchQuery = text;
     if (keys.gemini) {
       const result = await generatePoemAndColors(keys.gemini, text, tags, currentMood);
       poem = result.poem;
       colors = result.colors;
+      searchQuery = result.searchQuery || text;
     } else {
       // デモ用フォールバック
       poem = demoPoem(text);
@@ -241,7 +243,7 @@ document.getElementById('btn-generate').addEventListener('click', async () => {
 
     // 画像検索（並行）
     if (keys.unsplash) {
-      fetchUnsplashImages(keys.unsplash, text).then(images => {
+      fetchUnsplashImages(keys.unsplash, searchQuery).then(images => {
         renderPreviewImages(images);
       }).catch(e => {
         document.getElementById('images-loading').style.display = 'none';
@@ -286,7 +288,7 @@ async function generatePoemAndColors(apiKey, text, tags, mood) {
 色は深めのトーン、やわらかいトーンを基本とし、絵の具で表現することを意識した色味にしてください。
 
 以下のJSON形式のみ出力（前後に余分な文字なし）：
-{"poem": "詩のテキスト（改行は\\nで）", "colors": ["#色1", "#色2", "#色3"]}`;
+{"poem": "詩のテキスト（改行は\\nで）", "colors": ["#色1", "#色2", "#色3"], "searchQuery": "English photo search keywords (2-3 words)"}`;
 
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
@@ -321,7 +323,7 @@ async function generatePoemAndColors(apiKey, text, tags, mood) {
   const match = stripped.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('レスポンスのパースに失敗しました');
   const parsed = JSON.parse(match[0]);
-  return { poem: parsed.poem || '', colors: parsed.colors || [] };
+  return { poem: parsed.poem || '', colors: parsed.colors || [], searchQuery: parsed.searchQuery || text };
 }
 
 // ----- Unsplash API -----
