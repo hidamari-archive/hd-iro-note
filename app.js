@@ -286,7 +286,7 @@ async function generatePoemAndColors(apiKey, text, tags, mood) {
 {"poem": "詩のテキスト（改行は\\nで）", "colors": ["#色1", "#色2", "#色3"]}`;
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -304,9 +304,11 @@ async function generatePoemAndColors(apiKey, text, tags, mood) {
 
   const data = await res.json();
   const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  console.log('[Gemini raw]', raw);
 
-  // JSON抽出
-  const match = raw.match(/\{[\s\S]*\}/);
+  // JSON抽出（コードブロック除去 → {} 抽出）
+  const stripped = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+  const match = stripped.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('レスポンスのパースに失敗しました');
   const parsed = JSON.parse(match[0]);
   return { poem: parsed.poem || '', colors: parsed.colors || [] };
