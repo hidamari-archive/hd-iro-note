@@ -291,7 +291,7 @@ async function generatePoemAndColors(apiKey, text, tags, mood) {
 {"poem": "詩のテキスト（改行は\\nで）", "colors": ["#色1", "#色2", "#色3"], "searchQuery": "English photo search keywords (2-3 words)"}`;
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
