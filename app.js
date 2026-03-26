@@ -142,55 +142,31 @@ document.getElementById('btn-new-card').addEventListener('click', () => {
 });
 
 function openNewCardScreen() {
-  // フォームリセット
   document.getElementById('input-text').value = '';
-  document.getElementById('input-tags').value = '';
-  document.getElementById('tag-preview').innerHTML = '';
-  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
-  currentMood = null;
-
-  // 保存済みキーを反映
-  const keys = DB.getKeys();
-  if (keys.gemini) document.getElementById('input-gemini-key').value = keys.gemini;
-  if (keys.unsplash) document.getElementById('input-unsplash-key').value = keys.unsplash;
-
   showScreen('screen-new');
 }
 
-// タグ入力プレビュー
-document.getElementById('input-tags').addEventListener('input', function() {
-  const tags = this.value.split(/[\s　]+/).filter(t => t.trim());
-  const preview = document.getElementById('tag-preview');
-  preview.innerHTML = '';
-  tags.forEach(t => {
-    const chip = document.createElement('div');
-    chip.className = 'tag-chip';
-    chip.textContent = t;
-    preview.appendChild(chip);
-  });
+// ----- 設定画面 -----
+document.getElementById('btn-settings').addEventListener('click', () => {
+  const keys = DB.getKeys();
+  if (keys.gemini) document.getElementById('input-gemini-key').value = keys.gemini;
+  if (keys.unsplash) document.getElementById('input-unsplash-key').value = keys.unsplash;
+  showScreen('screen-settings');
 });
 
-// 温度選択
-let currentMood = null;
-document.querySelectorAll('.mood-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (btn.classList.contains('selected')) {
-      btn.classList.remove('selected');
-      currentMood = null;
-    } else {
-      document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      currentMood = btn.dataset.mood;
-    }
-  });
-});
-
-// APIキー保存
 document.getElementById('btn-save-keys').addEventListener('click', () => {
   const gemini = document.getElementById('input-gemini-key').value.trim();
   const unsplash = document.getElementById('input-unsplash-key').value.trim();
   DB.saveKeys({ gemini, unsplash });
   showToast('APIキーを保存しました');
+});
+
+// ボードタブへジャンプ
+document.getElementById('btn-goto-boards').addEventListener('click', () => {
+  showScreen('screen-home');
+  document.querySelectorAll('.tab').forEach(t => {
+    if (t.dataset.tab === 'boards') t.click();
+  });
 });
 
 // ----- 生成処理 -----
@@ -201,16 +177,6 @@ let selectedImages = new Set();
 document.getElementById('btn-generate').addEventListener('click', async () => {
   const text = document.getElementById('input-text').value.trim();
   if (!text) { showToast('ネタテキストを入力してください'); return; }
-
-  const tagsRaw = document.getElementById('input-tags').value.trim();
-  const tags = tagsRaw ? tagsRaw.split(/[\s　]+/).filter(t => t) : [];
-
-  // APIキー保存
-  const geminiKey = document.getElementById('input-gemini-key').value.trim();
-  const unsplashKey = document.getElementById('input-unsplash-key').value.trim();
-  if (geminiKey || unsplashKey) {
-    DB.saveKeys({ gemini: geminiKey, unsplash: unsplashKey });
-  }
 
   const keys = DB.getKeys();
 
@@ -228,7 +194,7 @@ document.getElementById('btn-generate').addEventListener('click', async () => {
 
     let searchQuery = text;
     if (keys.gemini) {
-      const result = await generatePoemAndColors(keys.gemini, text, tags, currentMood);
+      const result = await generatePoemAndColors(keys.gemini, text);
       poem = result.poem;
       colors = result.colors;
       searchQuery = result.searchQuery || text;
@@ -238,7 +204,7 @@ document.getElementById('btn-generate').addEventListener('click', async () => {
       colors = demoColors();
     }
 
-    currentPreviewData = { poem, colors, tags, mood: currentMood };
+    currentPreviewData = { poem, colors };
     openPreviewModal(text, poem, colors, keys);
 
     // 画像検索（並行）
@@ -264,10 +230,7 @@ document.getElementById('btn-generate').addEventListener('click', async () => {
 });
 
 // ----- Gemini API -----
-async function generatePoemAndColors(apiKey, text, tags, mood) {
-  const tagsStr = tags.length > 0 ? tags.join('、') : 'なし';
-  const moodStr = mood || 'なし';
-
+async function generatePoemAndColors(apiKey, text) {
   const prompt = `あなたは「セージ」という詩人です。
 以下のルールで、入力されたイメージから短い詩を生成してください。
 
@@ -281,8 +244,6 @@ async function generatePoemAndColors(apiKey, text, tags, mood) {
 - 最後の一行がいちばん印象的になるように
 
 【入力】${text}
-【タグ】${tagsStr}
-【温度】${moodStr}
 
 また、このイメージに合うカラーパレットを3〜5色、HEXコードで提案してください。
 色は深めのトーン、やわらかいトーンを基本とし、絵の具で表現することを意識した色味にしてください。
@@ -342,6 +303,58 @@ async function fetchUnsplashImages(clientId, query) {
   }));
 }
 
+// ----- プレビューモーダル ボード選択 -----
+let selectedBoardIds = new Set();
+
+function renderPreviewBoards() {
+  const boards = DB.getBoards();
+  const container = document.getElementById('preview-board-chips');
+  container.innerHTML = '';
+  selectedBoardIds.clear();
+  if (boards.length === 0) {
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size:12px;color:var(--text3);padding:4px 0;';
+    p.textContent = 'まだボードがありません';
+    container.appendChild(p);
+    return;
+  }
+  boards.forEach(board => {
+    const btn = document.createElement('button');
+    btn.className = 'board-chip';
+    btn.textContent = board.name;
+    btn.addEventListener('click', () => {
+      if (selectedBoardIds.has(board.id)) {
+        selectedBoardIds.delete(board.id);
+        btn.classList.remove('selected');
+      } else {
+        selectedBoardIds.add(board.id);
+        btn.classList.add('selected');
+      }
+    });
+    container.appendChild(btn);
+  });
+}
+
+document.getElementById('btn-preview-new-board').addEventListener('click', () => {
+  const name = prompt('ボードの名前を入力してください');
+  if (!name || !name.trim()) return;
+  const board = {
+    id: Date.now().toString(),
+    name: name.trim(),
+    cards: [],
+    created_at: new Date().toISOString(),
+  };
+  const boards = DB.getBoards();
+  boards.push(board);
+  DB.saveBoards(boards);
+  renderPreviewBoards();
+  // 作成したボードを自動選択
+  selectedBoardIds.add(board.id);
+  const chips = document.querySelectorAll('.board-chip');
+  chips.forEach(c => { if (c.textContent === board.name) c.classList.add('selected'); });
+  showToast(`「${board.name}」を作成しました`);
+});
+
 // ----- デモ用フォールバック -----
 function demoPoem(text) {
   const poems = [
@@ -386,6 +399,7 @@ function openPreviewModal(text, poem, colors, keys) {
   }
 
   selectedImages.clear();
+  renderPreviewBoards();
   document.getElementById('modal-preview').style.display = 'flex';
 }
 
@@ -466,8 +480,6 @@ document.getElementById('btn-save-card').addEventListener('click', () => {
     id: Date.now().toString(),
     created_at: new Date().toISOString(),
     text: currentInputText,
-    tags: currentPreviewData.tags,
-    mood: currentPreviewData.mood,
     poem: currentPreviewData.poem,
     colors: currentPreviewData.colors,
     images: images,
@@ -477,6 +489,9 @@ document.getElementById('btn-save-card').addEventListener('click', () => {
   const cards = DB.getCards();
   cards.push(card);
   DB.saveCards(cards);
+
+  // 選択されたボードに追加
+  selectedBoardIds.forEach(boardId => addCardToBoard(card.id, boardId));
 
   document.getElementById('modal-preview').style.display = 'none';
   showToast('カードを保存しました ✦');
@@ -524,19 +539,16 @@ function openCardDetail(cardId) {
   const inner = document.createElement('div');
   inner.className = 'card-detail-body';
 
-  // タグ・ムード
+  // ボード名をタグ表示
   const meta = document.createElement('div');
   meta.className = 'card-detail-meta';
-  if (card.mood) {
-    const m = document.createElement('div');
-    m.className = 'tag-chip';
-    m.textContent = card.mood;
-    meta.appendChild(m);
-  }
-  (card.tags || []).forEach(t => {
+  const allBoards = DB.getBoards();
+  (card.boards || []).forEach(boardId => {
+    const board = allBoards.find(b => b.id === boardId);
+    if (!board) return;
     const ch = document.createElement('div');
     ch.className = 'tag-chip';
-    ch.textContent = t;
+    ch.textContent = board.name;
     meta.appendChild(ch);
   });
   if (meta.children.length) inner.appendChild(meta);
@@ -648,7 +660,7 @@ async function regenPoemForCard(cardId) {
   if (!card) return;
   try {
     showToast('詩を再生成中…');
-    const { poem, colors } = await generatePoemAndColors(keys.gemini, card.text, card.tags || [], card.mood);
+    const { poem, colors } = await generatePoemAndColors(keys.gemini, card.text);
     card.poem = poem;
     card.colors = colors;
     DB.saveCards(cards);

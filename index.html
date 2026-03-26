@@ -19,9 +19,14 @@
     <header class="home-header">
       <div class="header-top">
         <h1 class="app-title"><img src="apple-touch-icon.png" class="app-icon" alt="">灯だまり<span class="title-sub">色帖</span></h1>
-        <button class="icon-btn" id="btn-goto-boards" title="ムードボード">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        </button>
+        <div class="header-actions">
+          <button class="icon-btn" id="btn-goto-boards" title="ムードボード">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          </button>
+          <button class="icon-btn" id="btn-settings" title="設定">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
       </div>
       <nav class="home-tabs">
         <button class="tab active" data-tab="cards">カード</button>
@@ -70,44 +75,7 @@
     <main class="new-main">
       <div class="form-group">
         <label class="form-label">ネタ・イメージ</label>
-        <textarea id="input-text" class="input-text" placeholder="例：ブルーのクリームソーダ、雨上がりの石畳…" rows="3"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">タグ <span class="label-hint">（スペースで区切る）</span></label>
-        <input type="text" id="input-tags" class="input-field" placeholder="透明感　夏　冷たい">
-        <div id="tag-preview" class="tag-preview"></div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">温度・空気感</label>
-        <div class="mood-options">
-          <button class="mood-btn" data-mood="あたたかい">あたたかい</button>
-          <button class="mood-btn" data-mood="冷たい">冷たい</button>
-          <button class="mood-btn" data-mood="しずか">しずか</button>
-          <button class="mood-btn" data-mood="きらきら">きらきら</button>
-          <button class="mood-btn" data-mood="ふわふわ">ふわふわ</button>
-          <button class="mood-btn" data-mood="つよい">つよい</button>
-        </div>
-      </div>
-
-      <div class="api-settings">
-        <details>
-          <summary class="settings-summary">API設定 <span class="settings-hint">（初回のみ）</span></summary>
-          <div class="settings-body">
-            <div class="form-group">
-              <label class="form-label">Gemini API キー</label>
-              <input type="password" id="input-gemini-key" class="input-field" placeholder="AIza...">
-              <p class="field-hint">Gemini API（無料枠）を使って詩とカラーパレットを生成します</p>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Unsplash Access Key</label>
-              <input type="password" id="input-unsplash-key" class="input-field" placeholder="Client-ID...">
-              <p class="field-hint">画像検索に使います。なければスキップ</p>
-            </div>
-            <button class="save-keys-btn" id="btn-save-keys">キーを保存</button>
-          </div>
-        </details>
+        <textarea id="input-text" class="input-text" placeholder="例：ブルーのクリームソーダ、雨上がりの石畳…" rows="4"></textarea>
       </div>
 
       <button class="generate-btn" id="btn-generate">
@@ -175,6 +143,12 @@
         <div id="images-loading" class="images-loading" style="display:none">画像を検索中…</div>
       </div>
 
+      <div class="preview-boards-section">
+        <p class="section-label">ムードボードに追加 <span class="label-hint">（任意・複数選択可）</span></p>
+        <div id="preview-board-chips" class="preview-board-chips"></div>
+        <button class="new-board-btn preview-new-board-btn" id="btn-preview-new-board">＋ 新しいボードを作る</button>
+      </div>
+
       <div class="modal-actions">
         <button class="modal-btn-secondary" id="btn-regen-poem">詩を再生成</button>
         <button class="modal-btn-primary" id="btn-save-card">このカードを保存</button>
@@ -190,6 +164,33 @@
       <div id="board-select-list" class="board-select-list"></div>
       <button class="new-board-btn modal-new-board" id="btn-modal-new-board">＋ 新しいボードを作る</button>
     </div>
+  </div>
+
+  <!-- ===== 設定画面 ===== -->
+  <div id="screen-settings" class="screen">
+    <header class="sub-header">
+      <button class="back-btn" data-back="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <h2>設定</h2>
+      <div></div>
+    </header>
+    <main class="settings-main">
+      <div class="settings-group">
+        <p class="settings-group-title">API設定</p>
+        <div class="form-group">
+          <label class="form-label">Gemini API キー</label>
+          <input type="password" id="input-gemini-key" class="input-field" placeholder="AIza...">
+          <p class="field-hint">詩とカラーパレットの生成に使います（無料枠あり）</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unsplash Access Key</label>
+          <input type="password" id="input-unsplash-key" class="input-field" placeholder="Client-ID...">
+          <p class="field-hint">画像検索に使います。なければスキップ</p>
+        </div>
+        <button class="save-keys-btn" id="btn-save-keys">保存する</button>
+      </div>
+    </main>
   </div>
 
   <!-- ===== カラーコード表示 トースト ===== -->
