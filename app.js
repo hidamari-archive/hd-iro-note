@@ -123,13 +123,38 @@ function renderBoardList() {
     return;
   }
   empty.style.display = 'none';
+  const allCards = DB.getCards();
   boards.forEach(board => {
     const item = document.createElement('div');
     item.className = 'board-item';
-    item.innerHTML = `
-      <span class="board-item-name">${board.name}</span>
-      <span class="board-item-count">${board.cards.length}枚</span>
-    `;
+
+    // サムネイル（最大3枚）
+    const thumbs = document.createElement('div');
+    thumbs.className = 'board-item-thumbs';
+    board.cards.slice(0, 3).forEach(cardId => {
+      const card = allCards.find(c => c.id === cardId);
+      if (!card) return;
+      const t = document.createElement('div');
+      t.className = 'board-thumb';
+      if (card.images && card.images[0]) {
+        const img = document.createElement('img');
+        img.src = card.images[0].url;
+        img.alt = '';
+        t.appendChild(img);
+      } else if (card.colors && card.colors[0]) {
+        t.style.background = card.colors[0];
+      } else {
+        t.style.background = 'var(--surface2)';
+      }
+      thumbs.appendChild(t);
+    });
+    item.appendChild(thumbs);
+
+    const info = document.createElement('div');
+    info.className = 'board-item-info';
+    info.innerHTML = `<span class="board-item-name">${board.name}</span><span class="board-item-count">${board.cards.length}枚</span>`;
+    item.appendChild(info);
+
     item.addEventListener('click', () => openBoard(board.id));
     list.appendChild(item);
   });
@@ -547,8 +572,9 @@ function openCardDetail(cardId) {
     const board = allBoards.find(b => b.id === boardId);
     if (!board) return;
     const ch = document.createElement('div');
-    ch.className = 'tag-chip';
+    ch.className = 'tag-chip tag-chip--link';
     ch.textContent = board.name;
+    ch.addEventListener('click', () => openBoard(boardId));
     meta.appendChild(ch);
   });
   if (meta.children.length) inner.appendChild(meta);
@@ -680,25 +706,59 @@ function openBoardSelectModal(cardId) {
 
   if (boards.length === 0) {
     const p = document.createElement('p');
-    p.style.cssText = 'text-align:center;color:var(--text3);font-size:13px;padding:16px 0;';
+    p.style.cssText = 'font-size:12px;color:var(--text3);padding:4px 0 12px;';
     p.textContent = 'ボードがありません。下のボタンで作成してください。';
     list.appendChild(p);
   }
 
+  // 現在の所属ボードを初期選択状態にする
+  const selectedIds = new Set(
+    boards.filter(b => b.cards.includes(cardId)).map(b => b.id)
+  );
+
   boards.forEach(board => {
-    const item = document.createElement('button');
-    item.className = 'board-select-item';
-    const already = board.cards.includes(cardId);
-    item.textContent = board.name + (already ? '（追加済）' : '');
-    item.disabled = already;
-    if (already) item.style.opacity = '0.5';
-    item.addEventListener('click', () => {
-      addCardToBoard(cardId, board.id);
-      document.getElementById('modal-boards').style.display = 'none';
-      showToast(`「${board.name}」に追加しました`);
+    const btn = document.createElement('button');
+    btn.className = 'board-chip' + (selectedIds.has(board.id) ? ' selected' : '');
+    btn.textContent = board.name;
+    btn.addEventListener('click', () => {
+      if (selectedIds.has(board.id)) {
+        selectedIds.delete(board.id);
+        btn.classList.remove('selected');
+      } else {
+        selectedIds.add(board.id);
+        btn.classList.add('selected');
+      }
     });
-    list.appendChild(item);
+    list.appendChild(btn);
   });
+
+  // 保存ボタン
+  const saveBtn = document.getElementById('btn-modal-save-boards');
+  saveBtn.onclick = () => {
+    const allBoards = DB.getBoards();
+    const cards = DB.getCards();
+    const card = cards.find(c => c.id === cardId);
+    if (card) {
+      // 追加・削除を同期
+      allBoards.forEach(board => {
+        const inBoard = board.cards.includes(cardId);
+        const wantIn = selectedIds.has(board.id);
+        if (wantIn && !inBoard) {
+          board.cards.push(cardId);
+          if (!card.boards) card.boards = [];
+          if (!card.boards.includes(board.id)) card.boards.push(board.id);
+        } else if (!wantIn && inBoard) {
+          board.cards = board.cards.filter(id => id !== cardId);
+          card.boards = (card.boards || []).filter(id => id !== board.id);
+        }
+      });
+      DB.saveBoards(allBoards);
+      DB.saveCards(cards);
+    }
+    document.getElementById('modal-boards').style.display = 'none';
+    showToast('ボードを更新しました');
+    openCardDetail(cardId); // メタ表示を更新
+  };
 
   document.getElementById('modal-boards').style.display = 'flex';
 }
@@ -727,12 +787,20 @@ document.getElementById('btn-new-board').addEventListener('click', () => {
 
 // 新ボード作成（モーダル内）
 document.getElementById('btn-modal-new-board').addEventListener('click', () => {
-  document.getElementById('modal-boards').style.display = 'none';
-  const board = createNewBoard();
-  if (board && currentCardId) {
-    addCardToBoard(currentCardId, board.id);
-    showToast(`「${board.name}」に追加しました`);
-  }
+  const name = prompt('ボードの名前を入力してください');
+  if (!name || !name.trim()) return;
+  const board = {
+    id: Date.now().toString(),
+    name: name.trim(),
+    cards: [],
+    created_at: new Date().toISOString(),
+  };
+  const boards = DB.getBoards();
+  boards.push(board);
+  DB.saveBoards(boards);
+  // チップとして追加・自動選択
+  if (currentCardId) openBoardSelectModal(currentCardId);
+  showToast(`「${board.name}」を作成しました`);
 });
 
 function createNewBoard() {
