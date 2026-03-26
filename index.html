@@ -138,7 +138,13 @@
       </div>
 
       <div class="preview-images-section">
-        <p class="section-label">参考画像を選ぶ <span class="label-hint">（タップで選択）</span></p>
+        <div class="images-header">
+          <p class="section-label">参考画像を選ぶ <span class="label-hint">（タップで選択）</span></p>
+          <div class="source-btns">
+            <button class="source-btn active" id="btn-src-unsplash">Unsplash</button>
+            <button class="source-btn" id="btn-src-wikimedia">Wikimedia</button>
+          </div>
+        </div>
         <div id="preview-images" class="preview-images-grid"></div>
         <div id="images-loading" class="images-loading" style="display:none">画像を検索中…</div>
       </div>

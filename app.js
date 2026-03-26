@@ -196,6 +196,7 @@ document.getElementById('btn-goto-boards').addEventListener('click', () => {
 // ----- 生成処理 -----
 let currentPreviewData = null;
 let currentInputText = '';
+let currentSearchQuery = '';
 let selectedImages = new Set();
 
 document.getElementById('btn-generate').addEventListener('click', async () => {
@@ -229,19 +230,11 @@ document.getElementById('btn-generate').addEventListener('click', async () => {
     }
 
     currentPreviewData = { poem, colors };
+    currentSearchQuery = searchQuery;
     openPreviewModal(text, poem, colors, keys);
 
-    // 画像検索（並行）
-    if (keys.unsplash) {
-      fetchUnsplashImages(keys.unsplash, searchQuery).then(images => {
-        renderPreviewImages(images);
-      }).catch(e => {
-        document.getElementById('images-loading').style.display = 'none';
-        showToast('画像の取得に失敗しました: ' + e.message);
-      });
-    } else {
-      document.getElementById('images-loading').style.display = 'none';
-    }
+    // 画像検索（並行）- Unsplashがあれば試し、なければWikimediaへ
+    searchImagesWithFallback(keys, searchQuery, text);
 
   } catch (err) {
     console.error(err);
@@ -326,6 +319,86 @@ async function fetchUnsplashImages(clientId, query) {
     credit: p.user.name,
   }));
 }
+
+// ----- Wikimedia Commons API -----
+async function fetchWikimediaImages(query) {
+  const params = new URLSearchParams({
+    action: 'query',
+    generator: 'search',
+    gsrsearch: query,
+    gsrnamespace: '6',
+    prop: 'imageinfo',
+    iiprop: 'url',
+    iiurlwidth: '400',
+    format: 'json',
+    origin: '*',
+    gsrlimit: '15',
+  });
+  const res = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`);
+  if (!res.ok) throw new Error('Wikimedia API error');
+  const data = await res.json();
+  const pages = data.query?.pages || {};
+  const imageExts = /\.(jpg|jpeg|png|webp)$/i;
+  return Object.values(pages)
+    .filter(p => p.imageinfo && imageExts.test(p.title))
+    .slice(0, 9)
+    .map(p => ({
+      url: p.imageinfo[0].thumburl || p.imageinfo[0].url,
+      fullUrl: p.imageinfo[0].url,
+      source: 'Wikimedia Commons',
+      credit: p.title.replace('File:', ''),
+    }));
+}
+
+// ----- 画像検索（フォールバック付き） -----
+function setImageSourceBtn(source) {
+  document.getElementById('btn-src-unsplash').classList.toggle('active', source === 'unsplash');
+  document.getElementById('btn-src-wikimedia').classList.toggle('active', source === 'wikimedia');
+}
+
+async function searchImagesWithFallback(keys, searchQuery, originalText) {
+  document.getElementById('images-loading').style.display = 'block';
+  document.getElementById('preview-images').innerHTML = '';
+  if (keys.unsplash) {
+    try {
+      const images = await fetchUnsplashImages(keys.unsplash, searchQuery);
+      if (images.length > 0) {
+        setImageSourceBtn('unsplash');
+        renderPreviewImages(images);
+        return;
+      }
+    } catch (e) { /* Unsplash失敗 → Wikimediaへ */ }
+  }
+  // Wikimedia Commons にフォールバック
+  setImageSourceBtn('wikimedia');
+  fetchWikimediaImages(originalText)
+    .then(images => renderPreviewImages(images))
+    .catch(e => {
+      document.getElementById('images-loading').style.display = 'none';
+      showToast('画像の取得に失敗しました');
+    });
+}
+
+// ソース切り替えボタン
+document.getElementById('btn-src-unsplash').addEventListener('click', () => {
+  const keys = DB.getKeys();
+  if (!keys.unsplash) { showToast('UnsplashのAPIキーが設定されていません'); return; }
+  setImageSourceBtn('unsplash');
+  document.getElementById('images-loading').style.display = 'block';
+  document.getElementById('preview-images').innerHTML = '';
+  fetchUnsplashImages(keys.unsplash, currentSearchQuery)
+    .then(images => renderPreviewImages(images))
+    .catch(() => showToast('Unsplashの取得に失敗しました'));
+});
+
+document.getElementById('btn-src-wikimedia').addEventListener('click', () => {
+  setImageSourceBtn('wikimedia');
+  document.getElementById('images-loading').style.display = 'block';
+  document.getElementById('preview-images').innerHTML = '';
+  fetchWikimediaImages(currentInputText)
+    .then(images => renderPreviewImages(images))
+    .catch(() => showToast('Wikimediaの取得に失敗しました'));
+});
 
 // ----- プレビューモーダル ボード選択 -----
 let selectedBoardIds = new Set();

@@ -713,6 +713,35 @@ html, body {
   margin-bottom: 0;
 }
 
+.images-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.images-header .section-label { margin-bottom: 0; }
+.source-btns {
+  display: flex;
+  gap: 4px;
+}
+.source-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.18s;
+  letter-spacing: 0.03em;
+}
+.source-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
 .preview-images-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
