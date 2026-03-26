@@ -128,26 +128,25 @@ function renderBoardList() {
     const item = document.createElement('div');
     item.className = 'board-item';
 
-    // サムネイル（最大3枚）
+    // サムネイル（常に3スロット固定）
     const thumbs = document.createElement('div');
     thumbs.className = 'board-item-thumbs';
-    board.cards.slice(0, 3).forEach(cardId => {
-      const card = allCards.find(c => c.id === cardId);
-      if (!card) return;
+    for (let s = 0; s < 3; s++) {
+      const cardId = board.cards[s];
+      const card = cardId ? allCards.find(c => c.id === cardId) : null;
       const t = document.createElement('div');
       t.className = 'board-thumb';
-      if (card.images && card.images[0]) {
+      if (card && card.images && card.images[0]) {
         const img = document.createElement('img');
         img.src = card.images[0].url;
         img.alt = '';
         t.appendChild(img);
-      } else if (card.colors && card.colors[0]) {
+      } else if (card && card.colors && card.colors[0]) {
         t.style.background = card.colors[0];
-      } else {
-        t.style.background = 'var(--surface2)';
       }
+      // 空スロットはCSSのデフォルト背景
       thumbs.appendChild(t);
-    });
+    }
     item.appendChild(thumbs);
 
     const info = document.createElement('div');
@@ -424,35 +423,74 @@ function openPreviewModal(text, poem, colors, keys) {
   }
 
   selectedImages.clear();
+  primaryImageIndex = null;
   renderPreviewBoards();
   document.getElementById('modal-preview').style.display = 'flex';
 }
+
+let primaryImageIndex = null;
 
 function renderPreviewImages(images) {
   document.getElementById('images-loading').style.display = 'none';
   const grid = document.getElementById('preview-images');
   grid.innerHTML = '';
   images.forEach((img, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'preview-img-wrap';
+
     const el = document.createElement('img');
     el.className = 'preview-img-item';
     el.src = img.url;
     el.alt = '';
     el.loading = 'lazy';
+
+    const badge = document.createElement('div');
+    badge.className = 'preview-img-badge';
+    badge.textContent = 'メイン';
+
     if (i === 0) {
-      el.classList.add('selected');
+      el.classList.add('selected', 'primary');
+      wrap.classList.add('is-primary');
       selectedImages.add(i);
+      primaryImageIndex = 0;
     }
+
     el.addEventListener('click', () => {
-      if (el.classList.contains('selected')) {
-        el.classList.remove('selected');
-        selectedImages.delete(i);
-      } else {
+      const allImgs = grid.querySelectorAll('.preview-img-item');
+      const allWraps = grid.querySelectorAll('.preview-img-wrap');
+      if (!el.classList.contains('selected')) {
+        // 未選択 → 選択
         el.classList.add('selected');
         selectedImages.add(i);
+      } else if (!el.classList.contains('primary')) {
+        // 選択済・非メイン → メインに昇格
+        allImgs.forEach(e => e.classList.remove('primary'));
+        allWraps.forEach(w => w.classList.remove('is-primary'));
+        el.classList.add('primary');
+        wrap.classList.add('is-primary');
+        primaryImageIndex = i;
+      } else {
+        // メイン → 選択解除
+        el.classList.remove('selected', 'primary');
+        wrap.classList.remove('is-primary');
+        selectedImages.delete(i);
+        primaryImageIndex = null;
+        // 次の選択済みをメインに
+        for (let j = 0; j < allImgs.length; j++) {
+          if (allImgs[j].classList.contains('selected')) {
+            allImgs[j].classList.add('primary');
+            allWraps[j].classList.add('is-primary');
+            primaryImageIndex = j;
+            break;
+          }
+        }
       }
     });
+
     el._imageData = img;
-    grid.appendChild(el);
+    wrap.appendChild(el);
+    wrap.appendChild(badge);
+    grid.appendChild(wrap);
   });
 }
 
@@ -464,10 +502,7 @@ document.getElementById('btn-regen-poem').addEventListener('click', async () => 
   btn.textContent = '生成中…';
   btn.disabled = true;
   try {
-    const { poem, colors } = await generatePoemAndColors(
-      keys.gemini, currentInputText,
-      currentPreviewData?.tags || [], currentPreviewData?.mood || null
-    );
+    const { poem, colors } = await generatePoemAndColors(keys.gemini, currentInputText);
     document.getElementById('preview-poem').textContent = poem;
     currentPreviewData.poem = poem;
     currentPreviewData.colors = colors;
@@ -494,12 +529,17 @@ document.getElementById('btn-save-card').addEventListener('click', () => {
 
   // 選択された画像
   const imgEls = document.querySelectorAll('.preview-img-item');
+  let primaryImg = null;
   const images = [];
   imgEls.forEach((el, i) => {
-    if (selectedImages.has(i) && el._imageData) {
+    if (!selectedImages.has(i) || !el._imageData) return;
+    if (el.classList.contains('primary')) {
+      primaryImg = el._imageData;
+    } else {
       images.push(el._imageData);
     }
   });
+  if (primaryImg) images.unshift(primaryImg);
 
   const card = {
     id: Date.now().toString(),
