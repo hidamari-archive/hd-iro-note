@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f0e8">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>灯だまり色帖</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- ===== ホーム画面 ===== -->
+  <div id="screen-home" class="screen active">
+    <header class="home-header">
+      <div class="header-top">
+        <h1 class="app-title"><img src="apple-touch-icon.png" class="app-icon" alt="">灯だまり<span class="title-sub">色帖</span></h1>
+        <div class="header-actions">
+          <button class="icon-btn" id="btn-goto-boards" title="ムードボード">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          </button>
+          <button class="icon-btn" id="btn-settings" title="設定">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+      </div>
+      <nav class="home-tabs">
+        <button class="tab active" data-tab="cards">カード</button>
+        <button class="tab" data-tab="boards">ボード</button>
+      </nav>
+    </header>
+
+    <main class="home-main">
+      <!-- カード一覧 -->
+      <div id="tab-cards" class="tab-content active">
+        <div id="card-grid" class="card-grid"></div>
+        <div id="empty-cards" class="empty-state" style="display:none">
+          <div class="empty-icon">✦</div>
+          <p>まだ種がありません<br>＋ボタンからネタを入力してください</p>
+        </div>
+      </div>
+
+      <!-- ボード一覧 -->
+      <div id="tab-boards" class="tab-content">
+        <div id="board-list" class="board-list"></div>
+        <div id="empty-boards" class="empty-state" style="display:none">
+          <div class="empty-icon">✦</div>
+          <p>ムードボードがありません<br>カードから追加してください</p>
+        </div>
+        <button class="new-board-btn" id="btn-new-board">＋ 新しいボードを作る</button>
+      </div>
+    </main>
+
+    <footer class="app-footer">🕯 灯だまり工房</footer>
+
+    <button class="fab" id="btn-new-card" title="新しいネタ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+
+  <!-- ===== 新規ネタ入力画面 ===== -->
+  <div id="screen-new" class="screen">
+    <header class="sub-header">
+      <button class="back-btn" data-back="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <h2>新しい種</h2>
+      <div></div>
+    </header>
+
+    <main class="new-main">
+      <div class="form-group">
+        <label class="form-label">ネタ・イメージ</label>
+        <textarea id="input-text" class="input-text" placeholder="例：ブルーのクリームソーダ、雨上がりの石畳…" rows="4"></textarea>
+      </div>
+
+      <button class="generate-btn" id="btn-generate">
+        <span id="generate-label">種から育てる ✦</span>
+        <span id="generate-loading" style="display:none">生成中…</span>
+      </button>
+    </main>
+  </div>
+
+  <!-- ===== カード詳細画面 ===== -->
+  <div id="screen-card" class="screen">
+    <header class="sub-header">
+      <button class="back-btn" data-back="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <h2 id="card-detail-title">カード</h2>
+      <button class="icon-btn" id="btn-delete-card" title="削除">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      </button>
+    </header>
+
+    <main class="card-detail-main" id="card-detail-body">
+      <!-- JS で動的生成 -->
+    </main>
+  </div>
+
+  <!-- ===== ムードボード画面 ===== -->
+  <div id="screen-board" class="screen">
+    <header class="sub-header">
+      <button class="back-btn" data-back="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <h2 id="board-title-display">ムードボード</h2>
+      <button class="icon-btn" id="btn-delete-board" title="削除">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      </button>
+    </header>
+
+    <main class="board-main">
+      <div id="board-cards-grid" class="board-cards-grid"></div>
+      <div id="empty-board" class="empty-state" style="display:none">
+        <div class="empty-icon">✦</div>
+        <p>このボードにはまだカードがありません<br>カード詳細から追加してください</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== 生成結果プレビューモーダル ===== -->
+  <div id="modal-preview" class="modal-overlay" style="display:none">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <h3 class="modal-title">生成されました ✦</h3>
+
+      <div class="preview-poem-wrap">
+        <p id="preview-poem" class="preview-poem"></p>
+      </div>
+
+      <div class="preview-colors">
+        <div id="preview-palette" class="preview-palette"></div>
+      </div>
+
+      <div class="preview-images-section">
+        <div class="images-header">
+          <p class="section-label">参考画像を選ぶ <span class="label-hint">（タップで選択）</span></p>
+          <div class="source-btns">
+            <button class="source-btn active" id="btn-src-unsplash">Unsplash</button>
+            <button class="source-btn" id="btn-src-wikimedia">Wikimedia</button>
+          </div>
+        </div>
+        <div id="preview-images" class="preview-images-grid"></div>
+        <div id="images-loading" class="images-loading" style="display:none">画像を検索中…</div>
+      </div>
+
+      <div class="preview-boards-section">
+        <p class="section-label">ムードボードに追加 <span class="label-hint">（任意・複数選択可）</span></p>
+        <div id="preview-board-chips" class="preview-board-chips"></div>
+        <button class="new-board-btn preview-new-board-btn" id="btn-preview-new-board">＋ 新しいボードを作る</button>
+      </div>
+
+      <div class="modal-actions">
+        <button class="modal-btn-secondary" id="btn-regen-poem">詩を再生成</button>
+        <button class="modal-btn-primary" id="btn-save-card">このカードを保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ムードボード選択モーダル ===== -->
+  <div id="modal-boards" class="modal-overlay" style="display:none">
+    <div class="modal-sheet modal-sheet--sm">
+      <div class="modal-handle"></div>
+      <h3 class="modal-title">ムードボードに追加</h3>
+      <div id="board-select-list" class="board-select-list board-chip-list"></div>
+      <button class="new-board-btn modal-new-board" id="btn-modal-new-board">＋ 新しいボードを作る</button>
+      <button class="modal-btn-primary" id="btn-modal-save-boards" style="margin-top:10px">保存する</button>
+    </div>
+  </div>
+
+  <!-- ===== 設定画面 ===== -->
+  <div id="screen-settings" class="screen">
+    <header class="sub-header">
+      <button class="back-btn" data-back="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <h2>設定</h2>
+      <div></div>
+    </header>
+    <main class="settings-main">
+      <div class="settings-group">
+        <p class="settings-group-title">API設定</p>
+        <div class="form-group">
+          <label class="form-label">Gemini API キー</label>
+          <input type="password" id="input-gemini-key" class="input-field" placeholder="AIza...">
+          <p class="field-hint">詩とカラーパレットの生成に使います（無料枠あり）</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unsplash Access Key</label>
+          <input type="password" id="input-unsplash-key" class="input-field" placeholder="Client-ID...">
+          <p class="field-hint">画像検索に使います。なければスキップ</p>
+        </div>
+        <button class="save-keys-btn" id="btn-save-keys">保存する</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== カラーコード表示 トースト ===== -->
+  <div id="toast" class="toast" style="display:none"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
