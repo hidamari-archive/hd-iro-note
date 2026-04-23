@@ -1032,5 +1032,28 @@ document.getElementById('btn-delete-board').addEventListener('click', async () =
   }
 });
 
+// ===== ログイン =====
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  if (!email || !pass) return;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginErr');
+  btn.disabled = true; btn.textContent = '確認中…';
+  const { error } = await supa.auth.signInWithPassword({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'ログイン';
+  if (error) { err.style.opacity = '1'; setTimeout(() => err.style.opacity = '0', 2500); return; }
+  document.getElementById('loginOverlay').style.display = 'none';
+  renderCardGrid();
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginOverlay').style.display === 'flex') doLogin();
+});
+
 // ===== 初期化 =====
-renderCardGrid();
+(async () => {
+  const { data: { session } } = await supa.auth.getSession();
+  if (!session) { document.getElementById('loginOverlay').style.display = 'flex'; return; }
+  supa.auth.onAuthStateChange((_, s) => { if (!s) location.reload(); });
+  renderCardGrid();
+})();
