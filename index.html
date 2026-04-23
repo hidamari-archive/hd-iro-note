@@ -12,8 +12,29 @@
   <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    #loginOverlay{position:fixed;inset:0;background:#f5f0e8;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px 24px;z-index:9999}
+    .login-flame{font-size:36px;animation:loginFlicker 3s ease-in-out infinite}
+    @keyframes loginFlicker{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.85;transform:scale(.97)}}
+    .login-title{font-family:'Shippori Mincho',serif;font-size:22px;color:#3a3530}
+    .login-subtitle{font-size:12px;color:#7a7268;letter-spacing:.05em}
+    .login-input{width:100%;max-width:280px;background:#fff;border:1px solid #ddd8ce;border-radius:8px;color:#3a3530;font-size:16px;padding:12px 16px;outline:none;transition:border-color .2s}
+    .login-input:focus{border-color:#8b7355}
+    .login-btn{background:#f0ece4;border:1px solid #8b7355;border-radius:8px;color:#3a3530;font-size:14px;padding:10px 32px;cursor:pointer;letter-spacing:.1em;transition:opacity .2s}
+    .login-btn:active{opacity:.7}.login-btn:disabled{opacity:.5}
+    .login-error{font-size:12px;color:#C9897A;opacity:0;transition:opacity .3s;min-height:16px}
+  </style>
 </head>
 <body>
+  <div id="loginOverlay">
+    <div class="login-flame">🕯</div>
+    <div class="login-title">灯だまり色帖</div>
+    <div class="login-subtitle">メールアドレスとパスワードを入力してください</div>
+    <input type="email" id="loginEmail" class="login-input" placeholder="メールアドレス" autocomplete="email">
+    <input type="password" id="loginPass" class="login-input" placeholder="パスワード" autocomplete="current-password">
+    <div class="login-error" id="loginErr">メールアドレスまたはパスワードが違います</div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">ログイン</button>
+  </div>
 
   <!-- ===== ホーム画面 ===== -->
   <div id="screen-home" class="screen active">
